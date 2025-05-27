@@ -572,11 +572,32 @@ describe("Generator Library", () => {
       expect(results.some((r) => (r as string).includes("20"))).toBe(true); // 2.0x
     });
 
+    test("basic nested conditional", () => {
+      const grammar = '$start := [$$.isTrue ? [$$.count + 1] eleven | [$$.count - 1] nine]';
+      const knowledge = { isTrue: true, count: 10 };
+
+      const gen = Generator.compile(grammar);
+      const result = gen.execute(knowledge);
+
+      expect(result.output).toBe("11 eleven");
+    });
+
+    test("assignment in nested conditional", () => {
+      const grammar = '$start := [$$.isTrue ? [$$.count += 1] eleven | [$$.count -= 1] nine]';
+      const knowledge = { isTrue: true, count: 10 };
+
+      const gen = Generator.compile(grammar);
+      const result = gen.execute(knowledge);
+
+      expect(result.output).toBe("11 eleven");
+      expect(result.updatedKnowledge.count).toBe(11);
+    });
+
     test("complex nested knowledge with conditionals", () => {
       const grammar = `
-        $start := $status | $action
+        $start := $status $action
         $status := [$$.player.hp > $$.player.maxHp * 0.8 ? Healthy | $$.player.hp > $$.player.maxHp * 0.5 ? Wounded | Critical]
-        $action := [$$.player.hp < 30 ? [$$.player.hp += 20] You rest and recover | [$$.player.energy -= 5] You continue exploring]
+        $action := [$$.player.hp < 30 ? [!$$.player.hp += 20] You rest and recover | [!$$.player.energy -= 5] You continue exploring]
       `;
 
       const knowledge = {

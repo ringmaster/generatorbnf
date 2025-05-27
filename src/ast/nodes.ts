@@ -34,6 +34,8 @@ export class Grammar extends ASTNode {
     return result;
   }
 
+
+
   toString(): string {
     const ruleStrings = Array.from(this.rules.entries())
       .map(([name, rule]) => `$${name} := ${rule.toString()}`)
@@ -574,12 +576,32 @@ export class ConditionalExpression extends ASTNode {
     const newContext = { ...context, knowledge: condResult.updatedKnowledge };
 
     if (condResult.value) {
-      return this.trueValue.evaluate(newContext);
+      return this.evaluateBranch(this.trueValue, newContext);
     } else if (this.falseValue) {
-      return this.falseValue.evaluate(newContext);
+      return this.evaluateBranch(this.falseValue, newContext);
     } else {
       return { value: '', updatedKnowledge: condResult.updatedKnowledge };
     }
+  }
+
+  private evaluateBranch(branch: ASTNode, context: ExecutionContext): EvaluationResult {
+    if (branch instanceof CompoundExpression) {
+      const results = branch.expressions.map(expr => expr.evaluate(context));
+      const combinedValue = results.reduce((acc, res) => {
+        const value = res.value;
+
+        // Add a space if the previous value doesn't end with a space
+        // and the current value doesn't start with punctuation or a space
+        if (acc && !acc.endsWith(' ') && !value.startsWith(' ') && !value.match(/^[.,!?]/)) {
+          return acc + ' ' + value;
+        }
+
+        return acc + value;
+      }, '');
+      const updatedKnowledge = results.reduce((acc, res) => ({ ...acc, ...res.updatedKnowledge }), context.knowledge);
+      return { value: combinedValue, updatedKnowledge };
+    }
+    return branch.evaluate(context);
   }
 
   toString(): string {

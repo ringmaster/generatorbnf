@@ -236,70 +236,42 @@ export class Parser {
 
     if (this.match(TokenType.QUESTION)) {
       // Parse true branch - collect literals until we hit a pipe or rbracket
-      let trueValue: ASTNode;
+      const trueElements: ASTNode[] = [];
       
-      if (this.check(TokenType.PIPE) || this.check(TokenType.RBRACKET)) {
-        // Empty true branch
-        trueValue = new Literal("");
-      } else if (this.check(TokenType.DOLLAR) || this.check(TokenType.LPAREN) || this.check(TokenType.LBRACKET)) {
-        // If it starts with $, (, or [, parse as an expression
-        trueValue = this.parseAssignment();
-      } else {
-        // Otherwise, collect everything until pipe or bracket as literal text
-        let literalValue = "";
-        
-        // Capture each token separately to preserve spaces
-        while (!this.check(TokenType.PIPE) && !this.check(TokenType.RBRACKET) && !this.isAtEnd()) {
+      while (!this.check(TokenType.PIPE) && !this.check(TokenType.RBRACKET) && !this.isAtEnd()) {
+        if (this.check(TokenType.DOLLAR) || this.check(TokenType.LPAREN) || this.check(TokenType.LBRACKET)) {
+          trueElements.push(this.parseAssignment());
+        } else {
           const token = this.advance();
-          literalValue += token.value;
-          
-          // If the token is an identifier or string and we're not at the end,
-          // and the next token is also an identifier or string, add a space
-          if ((token.type === TokenType.IDENTIFIER || token.type === TokenType.STRING) && 
-              !this.check(TokenType.PIPE) && !this.check(TokenType.RBRACKET) && !this.isAtEnd() &&
-              (this.peek().type === TokenType.IDENTIFIER || this.peek().type === TokenType.STRING)) {
-            literalValue += " ";
-          }
+          trueElements.push(new Literal(token.value));
         }
-        trueValue = new Literal(literalValue);
       }
+
+      const trueValue = trueElements.length === 1 ? trueElements[0] : new CompoundExpression(trueElements);
 
       // Optional false branch
       let falseValue: ASTNode | undefined = undefined;
       if (this.match(TokenType.PIPE)) {
-        if (this.check(TokenType.RBRACKET)) {
-          // Empty false branch
-          falseValue = new Literal("");
-        } else if (this.check(TokenType.DOLLAR) || this.check(TokenType.LPAREN) || this.check(TokenType.LBRACKET)) {
-          // If it starts with $, (, or [, parse as an expression
-          falseValue = this.parseAssignment();
-        } else {
-          // Otherwise, collect everything until bracket as literal text
-          let literalValue = "";
-          
-          // Capture each token separately to preserve spaces
-          while (!this.check(TokenType.RBRACKET) && !this.isAtEnd()) {
+        const falseElements: ASTNode[] = [];
+        
+        while (!this.check(TokenType.RBRACKET) && !this.isAtEnd()) {
+          if (this.check(TokenType.DOLLAR) || this.check(TokenType.LPAREN) || this.check(TokenType.LBRACKET)) {
+            falseElements.push(this.parseAssignment());
+          } else {
             const token = this.advance();
             
             // Special case for 'nothing' which should be treated as empty string
             if (token.type === TokenType.IDENTIFIER && token.value === "nothing" && 
                 this.check(TokenType.RBRACKET)) {
-              literalValue = "";
+              falseElements.length = 0; // Clear elements
               break;
             }
             
-            literalValue += token.value;
-            
-            // If the token is an identifier or string and we're not at the end,
-            // and the next token is also an identifier or string, add a space
-            if ((token.type === TokenType.IDENTIFIER || token.type === TokenType.STRING) && 
-                !this.check(TokenType.RBRACKET) && !this.isAtEnd() &&
-                (this.peek().type === TokenType.IDENTIFIER || this.peek().type === TokenType.STRING)) {
-              literalValue += " ";
-            }
+            falseElements.push(new Literal(token.value));
           }
-          falseValue = new Literal(literalValue);
         }
+
+        falseValue = falseElements.length === 1 ? falseElements[0] : new CompoundExpression(falseElements);
       }
 
       // Allow conditionals without an else clause
