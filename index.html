@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Text Generator BNF Library Demo</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            border-radius: 8px;
+            padding: 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .section {
+            margin-bottom: 25px;
+        }
+        label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 8px;
+            color: #555;
+        }
+        textarea {
+            width: 100%;
+            height: 200px;
+            border: 2px solid #ddd;
+            border-radius: 4px;
+            padding: 12px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            resize: vertical;
+            box-sizing: border-box;
+        }
+        textarea:focus {
+            border-color: #4CAF50;
+            outline: none;
+        }
+        .controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background: #45a049;
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        input[type="number"] {
+            border: 2px solid #ddd;
+            border-radius: 4px;
+            padding: 8px;
+            width: 100px;
+        }
+        .output {
+            background: #f8f9fa;
+            border: 2px solid #e9ecef;
+            border-radius: 4px;
+            padding: 15px;
+            min-height: 100px;
+            font-family: 'Courier New', monospace;
+            white-space: pre-wrap;
+            color: #333;
+        }
+        .error {
+            background: #fff5f5;
+            border-color: #fed7d7;
+            color: #c53030;
+        }
+        .examples {
+            background: #f0f8ff;
+            border: 1px solid #b0d4f1;
+            border-radius: 4px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        .examples h3 {
+            margin-top: 0;
+            color: #2c5aa0;
+        }
+        .example-button {
+            background: #2196F3;
+            margin: 5px;
+            padding: 8px 12px;
+            font-size: 14px;
+        }
+        .example-button:hover {
+            background: #1976D2;
+        }
+        .info {
+            background: #e8f5e8;
+            border: 1px solid #c3e6c3;
+            border-radius: 4px;
+            padding: 10px;
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+        .build-instructions {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 4px;
+            padding: 15px;
+            margin: 20px 0;
+            font-family: 'Courier New', monospace;
+        }
+        .build-instructions h3 {
+            margin-top: 0;
+            color: #856404;
+        }
+        .code {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 3px;
+            padding: 2px 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 90%;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎲 Text Generator BNF Library Demo</h1>
+        
+        <div class="info">
+            <strong>New Syntax Features:</strong><br>
+            • Rules must start with $ (e.g., <code>$start := Hello World</code>)<br>
+            • Expressions only in brackets: <code>[$variable = value]</code><br>
+            • Silent expressions: <code>[!$variable = value]</code><br>
+            • Knowledge access: <code>$$.property</code><br>
+            • Compound expressions: <code>[!$a = 1; $b = 2]</code>
+        </div>
+
+        <div class="examples">
+            <h3>Example Grammars</h3>
+            <button class="example-button" onclick="loadExample('basic')">Basic Example</button>
+            <button class="example-button" onclick="loadExample('rpg')">RPG Game</button>
+            <button class="example-button" onclick="loadExample('expressions')">Expressions</button>
+            <button class="example-button" onclick="loadExample('knowledge')">Knowledge Demo</button>
+        </div>
+
+        <div class="section">
+            <label for="grammar">Grammar (BNF Script):</label>
+            <textarea id="grammar" placeholder="Enter your BNF grammar here...">$start := Hello $name!
+$name := Alice | Bob | Charlie</textarea>
+        </div>
+
+        <div class="section">
+            <label for="knowledge">Knowledge (JSON):</label>
+            <textarea id="knowledge" rows="8" placeholder='{"hp": 100, "level": 5}'>{}</textarea>
+        </div>
+
+        <div class="controls">
+            <button id="generateBtn" onclick="generate()">🎲 Generate</button>
+            <label for="seed">Seed:</label>
+            <input type="number" id="seed" value="123" min="0" max="999999">
+            <button onclick="generate(Math.floor(Math.random() * 999999))">🎯 Random Seed</button>
+        </div>
+
+        <div class="section">
+            <label>Output:</label>
+            <div id="output" class="output">Loading library...</div>
+        </div>
+    </div>
+
+    <!-- Load the bundle directly -->
+    <script src="./dist/index.js"></script>
+    
+    <script>
+        // Make sure the output element is initialized
+        document.getElementById('output').textContent = 'Ready! Click "Generate" to see output.';
+
+        function handleError(error) {
+            const outputDiv = document.getElementById('output');
+            outputDiv.className = 'output error';
+            outputDiv.innerHTML = `
+                <div class="build-instructions">
+                    <h3>⚠️ Error Occurred</h3>
+                    <p><strong>Error details:</strong><br>
+                    <span style="font-size: 12px; color: #666;">${error.message}</span></p>
+                    
+                    <p>If you're seeing this, make sure you've built the library:</p>
+                    <ol>
+                        <li>Install dependencies: <span class="code">npm install</span></li>
+                        <li>Build the library: <span class="code">npm run build</span></li>
+                        <li>Refresh this page</li>
+                    </ol>
+                </div>
+            `;
+        }
+
+        // Example grammars
+        const examples = {
+            basic: {
+                grammar: `$start := Hello $name! You have $$.hp health points.
+$name := Alice | Bob | Charlie | Dana`,
+                knowledge: `{
+  "hp": 100,
+  "level": 5
+}`
+            },
+            
+            rpg: {
+                grammar: `$start := [!$$.day += 1] Day $$.day: $event
+$event := [$$.hp < 20 ? $emergency | $normal]
+$emergency := [!$$.hp += 15] Emergency healing! HP: $$.hp
+$normal := You $activity and $outcome.
+$activity := explore the dungeon | fight monsters | rest at camp
+$outcome := find treasure | get injured | make progress`,
+                knowledge: `{
+  "day": 0,
+  "hp": 15,
+  "gold": 100
+}`
+            },
+            
+            expressions: {
+                grammar: `$start := [!$damage = $$.baseDamage * $multiplier] You deal [$damage] damage!
+$multiplier := 1.0:5 | 1.5:3 | 2.0:1`,
+                knowledge: `{
+  "baseDamage": 10,
+  "critChance": 0.2
+}`
+            },
+            
+            knowledge: {
+                grammar: `$start := Status: $status | Action: $action
+$status := [$$.player.hp > 80 ? Excellent | $$.player.hp > 50 ? Good | Critical]
+$action := [$$.player.hp < 30 ? [!$$.player.hp += 20] You rest and recover | You continue exploring]`,
+                knowledge: `{
+  "player": {
+    "hp": 25,
+    "maxHp": 100,
+    "energy": 80
+  },
+  "game": {
+    "difficulty": "normal",
+    "chapter": 3
+  }
+}`
+            }
+        };
+
+        function loadExample(exampleName) {
+            const example = examples[exampleName];
+            if (example) {
+                document.getElementById('grammar').value = example.grammar;
+                document.getElementById('knowledge').value = example.knowledge;
+            }
+        }
+
+        function generate(customSeed = null) {
+
+            const grammarText = document.getElementById('grammar').value.trim();
+            const knowledgeText = document.getElementById('knowledge').value.trim();
+            const seedValue = customSeed !== null ? customSeed : parseInt(document.getElementById('seed').value) || 123;
+            const outputDiv = document.getElementById('output');
+            
+            if (customSeed !== null) {
+                document.getElementById('seed').value = customSeed;
+            }
+            
+            try {
+                // Clear previous state
+                outputDiv.className = 'output';
+                outputDiv.textContent = 'Generating...';
+                
+                // Parse knowledge
+                let knowledge = {};
+                if (knowledgeText) {
+                    try {
+                        knowledge = JSON.parse(knowledgeText);
+                    } catch (e) {
+                        throw new Error(`Invalid JSON in knowledge: ${e.message}`);
+                    }
+                }
+                
+                // Generate using the library
+                const generator = window.GeneratorBNF.Generator.compile(grammarText);
+                const result = generator.execute(knowledge, seedValue);
+                
+                // Display results
+                let output = `Output: ${result.output}\n\n`;
+                output += `Updated Knowledge:\n${JSON.stringify(result.updatedKnowledge, null, 2)}\n\n`;
+                output += `Seed used: ${seedValue}`;
+                
+                outputDiv.textContent = output;
+                
+            } catch (error) {
+                outputDiv.className = 'output error';
+                handleError(error);
+                console.error('Generation error:', error);
+            }
+        }
+
+        // Make functions available globally for onclick handlers
+        window.loadExample = loadExample;
+        window.generate = generate;
+
+        // Load example on page load
+        window.addEventListener('load', function() {
+            loadExample('basic');
+            // Auto-generate on first load
+            setTimeout(() => generate(), 100);
+        });
+        
+        // Allow Enter+Ctrl to generate
+        document.addEventListener('keydown', function(e) {
+            if (e.ctrlKey && e.key === 'Enter') {
+                generate();
+            }
+        });
+    </script>
+</body>
+</html>
