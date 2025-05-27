@@ -428,7 +428,7 @@ export class Assignment extends ASTNode {
 
     switch (this.operator) {
       case '=':
-        current[finalProp] = value;
+        current[finalProp] = typeof value === 'string' && !isNaN(Number(value)) ? Number(value) : value;
         resultValue = value;
         break;
       case '+=':

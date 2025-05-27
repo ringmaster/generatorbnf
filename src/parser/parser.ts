@@ -237,11 +237,12 @@ export class Parser {
     if (this.match(TokenType.QUESTION)) {
       const trueValue = this.parseAssignment();
 
-      let falseValue: ASTNode | undefined;
+      let falseValue: ASTNode | undefined = undefined;
       if (this.match(TokenType.PIPE)) {
         falseValue = this.parseAssignment();
       }
 
+      // Allow conditionals without an else clause
       return new ConditionalExpression(expr, trueValue, falseValue);
     }
 

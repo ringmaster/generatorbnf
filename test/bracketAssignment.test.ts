@@ -25,9 +25,7 @@ describe('Bracket Assignment Tests', () => {
     // $foo := [$z = $y * 2]
     const grammar = '$x := 4\n$y := [$x + 3]\n$foo := [$z = $y * 2]\n$start := $foo';
     const gen = Generator.compile(grammar);
-    console.log('Compiled grammar AST:', gen.toString());
     const result = gen.execute();
-    console.log('Variable chain test result:', result.output);
 
     expect(result.output).toBe('14');
   });
@@ -51,10 +49,8 @@ describe('Bracket Assignment Tests', () => {
   test('nested rule and variable references', () => {
     const grammar = '$x := 4\n$y := [$x + 3]\n$start := Result: $y';
     const gen = Generator.compile(grammar);
-    console.log('Nested reference test AST:', gen.toString());
     const result = gen.execute();
-    console.log('Nested reference output:', result.output);
 
-    expect(result.output).toBe('Result 7');
+    expect(result.output).toBe('Result: 7');
   });
 });
