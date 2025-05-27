@@ -26,8 +26,8 @@ import { Generator, WeightedItem } from 'text-generator-bnf';
 
 // Define your grammar
 const grammar = `
-  start := Hello $name, you have $.hp health!
-  name := Alice | Bob | Charlie
+  $start := Hello $name, you have $$.hp health!
+  $name := Alice | Bob | Charlie
 `;
 
 // Prepare knowledge
@@ -51,37 +51,37 @@ console.log(result.updatedKnowledge);
 
 ### Basic Rules
 ```
-rulename := alternative1 | alternative2 | alternative3
-start := Hello World
+$rulename := alternative1 | alternative2 | alternative3
+$start := Hello World
 ```
 
 ### Weighted Alternatives
 ```
-loot := common_item:10 | rare_item:2 | epic_item:1
+$loot := common_item::10 | rare_item::2 | epic_item::1
 ```
 
 ### Knowledge Access
 ```
-status := Your HP is $.player.hp
-nested := $.game.level.current
+$status := Your HP is $$.player.hp
+$nested := $$.game.level.current
 ```
 
 ### Variable Assignment
 ```
-calculation := $temp = $.base * 2 | Result: $temp
-mutation := $.hp += 10 | Healed! HP: $.hp
+$calculation := Result: [$temp = $$.base * 2]
+$mutation := [! $$.hp += 10] Healed! HP: $$.hp
 ```
 
 ### Conditionals
 ```
-health := [$.hp > 50 ? healthy | wounded]
-complex := [$.level >= 10 ? $highLevel | $lowLevel]
+$health := [$$.hp > 50 ? healthy | wounded]
+$complex := [$$.level >= 10 ? $highLevel | $lowLevel]
 ```
 
 ### Expressions
 ```
-damage := $.damage = $.base * ($.strength / 10)
-comparison := [$.hp + $.armor > 100 ? safe | danger]
+$damage := [$$.damage = $$.base * ($$.strength / 10)]
+$comparison := [$$.hp + $$.armor > 100 ? safe | danger]
 ```
 
 ## API Reference
@@ -93,7 +93,7 @@ Compiles a grammar string into an executable AST.
 Executes the compiled grammar with optional knowledge and seed.
 
 **Parameters:**
-- `knowledge`: Object containing data accessible via `$knowledge.path`
+- `knowledge`: Object containing data accessible via `$$.path`
 - `seed`: Optional number for deterministic randomization
 
 **Returns:**
@@ -191,12 +191,12 @@ Time:        2.345s
 ### Complex RPG Example
 ```typescript
 const rpgGrammar = `
-  start := Day $.day: $event
-  event := [$.hp < 20 ? $emergency | $normal]
-  emergency := $.hp += 15 | Emergency healing! HP: $.hp
-  normal := You $activity and $outcome
-  activity := explore | fight | rest
-  outcome := [$.luck > 7 ? succeed greatly | succeed | struggle]
+  $start := Day $$.day: $event
+  $event := [$$.hp < 20 ? $emergency | $normal]
+  $emergency := [! $$.hp += 15] Emergency healing! HP: $$.hp
+  $normal := You $activity and $outcome
+  $activity := explore | fight | rest
+  $outcome := [$$.luck > 7 ? succeed | struggle]
 `;
 
 const gameState = { day: 1, hp: 15, luck: 8 };
