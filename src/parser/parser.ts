@@ -235,11 +235,71 @@ export class Parser {
     let expr = this.parseAssignment();
 
     if (this.match(TokenType.QUESTION)) {
-      const trueValue = this.parseAssignment();
+      // Parse true branch - collect literals until we hit a pipe or rbracket
+      let trueValue: ASTNode;
+      
+      if (this.check(TokenType.PIPE) || this.check(TokenType.RBRACKET)) {
+        // Empty true branch
+        trueValue = new Literal("");
+      } else if (this.check(TokenType.DOLLAR) || this.check(TokenType.LPAREN) || this.check(TokenType.LBRACKET)) {
+        // If it starts with $, (, or [, parse as an expression
+        trueValue = this.parseAssignment();
+      } else {
+        // Otherwise, collect everything until pipe or bracket as literal text
+        let literalValue = "";
+        
+        // Capture each token separately to preserve spaces
+        while (!this.check(TokenType.PIPE) && !this.check(TokenType.RBRACKET) && !this.isAtEnd()) {
+          const token = this.advance();
+          literalValue += token.value;
+          
+          // If the token is an identifier or string and we're not at the end,
+          // and the next token is also an identifier or string, add a space
+          if ((token.type === TokenType.IDENTIFIER || token.type === TokenType.STRING) && 
+              !this.check(TokenType.PIPE) && !this.check(TokenType.RBRACKET) && !this.isAtEnd() &&
+              (this.peek().type === TokenType.IDENTIFIER || this.peek().type === TokenType.STRING)) {
+            literalValue += " ";
+          }
+        }
+        trueValue = new Literal(literalValue);
+      }
 
+      // Optional false branch
       let falseValue: ASTNode | undefined = undefined;
       if (this.match(TokenType.PIPE)) {
-        falseValue = this.parseAssignment();
+        if (this.check(TokenType.RBRACKET)) {
+          // Empty false branch
+          falseValue = new Literal("");
+        } else if (this.check(TokenType.DOLLAR) || this.check(TokenType.LPAREN) || this.check(TokenType.LBRACKET)) {
+          // If it starts with $, (, or [, parse as an expression
+          falseValue = this.parseAssignment();
+        } else {
+          // Otherwise, collect everything until bracket as literal text
+          let literalValue = "";
+          
+          // Capture each token separately to preserve spaces
+          while (!this.check(TokenType.RBRACKET) && !this.isAtEnd()) {
+            const token = this.advance();
+            
+            // Special case for 'nothing' which should be treated as empty string
+            if (token.type === TokenType.IDENTIFIER && token.value === "nothing" && 
+                this.check(TokenType.RBRACKET)) {
+              literalValue = "";
+              break;
+            }
+            
+            literalValue += token.value;
+            
+            // If the token is an identifier or string and we're not at the end,
+            // and the next token is also an identifier or string, add a space
+            if ((token.type === TokenType.IDENTIFIER || token.type === TokenType.STRING) && 
+                !this.check(TokenType.RBRACKET) && !this.isAtEnd() &&
+                (this.peek().type === TokenType.IDENTIFIER || this.peek().type === TokenType.STRING)) {
+              literalValue += " ";
+            }
+          }
+          falseValue = new Literal(literalValue);
+        }
       }
 
       // Allow conditionals without an else clause
@@ -328,6 +388,12 @@ export class Parser {
     if (this.match(TokenType.LPAREN)) {
       const expr = this.parseExpression();
       this.consume(TokenType.RPAREN, "Expected ')' after expression");
+      return expr;
+    }
+    
+    // Support for nested bracketed expressions
+    if (this.match(TokenType.LBRACKET)) {
+      const expr = this.parseBracketedExpression();
       return expr;
     }
 

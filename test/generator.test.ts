@@ -258,7 +258,7 @@ describe("Generator Library", () => {
     });
 
     test("conditional without else clause", () => {
-      const grammar = "$start := [$$.hasItem ? You have the item!]";
+      const grammar = "$start := [$$.hasItem ? You have the item! ]";
       const gen = Generator.compile(grammar);
 
       const result1 = gen.execute({ hasItem: true });
